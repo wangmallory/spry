@@ -141,7 +141,6 @@ join university u
 join sport_team st 
 	on rfb.sport_team_id = st.id ")          
 recruit_form[which(recruit_form$creator_role == "COACH"),]$creator_role <- 'Coach'
-recruit_form[which(recruit_form$creator_role == "ADMIN"),]$creator_role <- 'Admin'
 
 cara_on <- dbGetQuery(con, "select school
   , division
