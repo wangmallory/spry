@@ -197,7 +197,6 @@ cara_on <- dbGetQuery(con, "select school
   group by 1,2,3")
 
 paperwork[which(paperwork$role=='STUDENT_ATHLETE'),]$role <- "SA"
-paperwork[which(paperwork$role=='STUDENT_ADMIN'),]$role <- "Admin"
 paperwork[which(paperwork$role=='COACH'),]$role <- "Coach"
 
 colnames(recruit_detail) <- c("Created Date","Recruit Name", "Commitment Status", 
