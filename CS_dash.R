@@ -26,19 +26,30 @@ str(tables)
 # Queries
 paperwork <- dbGetQuery(con, "
   SELECT
-    date_trunc ('month',created_at) AS created_date
-    , created_by_user_role
-    , COUNT(DISTINCT id) as created
-    , COUNT(CASE WHEN paperwork_form_status ='APPROVED' THEN id END) as approved
-    , COUNT(CASE WHEN paperwork_form_status ='COMPLETED' THEN id END) as completed
-    , COUNT(CASE WHEN paperwork_form_status ='VIEWED' THEN id END) as viewed
-    , COUNT(CASE WHEN paperwork_form_status ='NOT_STARTED' THEN id END) as not_started
-    , COUNT(CASE WHEN paperwork_form_status ='IN_PROGRESS' THEN id END) as in_progress
-    , COUNT(CASE WHEN paperwork_form_status ='REJECTED' THEN id END) as rejected
+    date_trunc ('month',pf.created_at) AS created_date
+	, u.name as school
+	, st.name as sport_team
+    , pf.created_by_user_role as role
+    , COUNT(DISTINCT pf.id) as created
+    , COUNT(CASE WHEN paperwork_form_status ='APPROVED' THEN pf.id END) as approved
+    , COUNT(CASE WHEN paperwork_form_status ='COMPLETED' THEN pf.id END) as completed
+    , COUNT(CASE WHEN paperwork_form_status ='VIEWED' THEN pf.id END) as viewed
+    , COUNT(CASE WHEN paperwork_form_status ='NOT_STARTED' THEN pf.id END) as not_started
+    , COUNT(CASE WHEN paperwork_form_status ='IN_PROGRESS' THEN pf.id END) as in_progress
+    , COUNT(CASE WHEN paperwork_form_status ='REJECTED' THEN pf.id END) as rejected
     
-    FROM paperwork_form
-    
-    GROUP BY 1,2
+    FROM paperwork_form pf
+  	join paperwork_form_batch pfb 
+  	on pf.paperwork_form_batch_id = pfb.id
+      join university u 
+  	on pfb.university_id = u.id
+  	and u.is_active IS TRUE
+              AND u.is_test_data IS FALSE   
+              AND u.id NOT IN (66977385, 66811820, 67620535, 66983148, 67431718,67364443)
+  	join sport_team st 
+  	on pfb.sport_team_id = st.id
+  	
+    GROUP BY 1,2, 3, 4
     ORDER BY 1 ASC")
 
 recruit <- dbGetQuery(con, "
@@ -92,8 +103,8 @@ recruit_detail <- dbGetQuery(con, "SELECT
           AND uuu.is_test_data IS FALSE   
           AND uuu.id NOT IN (66977385, 66811820, 67620535, 66983148, 67431718,67364443)          ")          
 
-recruit_tbl <- dbGetQuery(con, "SELECT
-  	uni.name as college
+recruit_tbl <- dbGetQuery(con, "SELECT date_trunc ('day',psaq.created_at) AS created_date
+  	, uni.name as college
   	, uni.id as uni_id 
   	, uni.division as division
   	, st.name as team
@@ -118,10 +129,10 @@ recruit_tbl <- dbGetQuery(con, "SELECT
   		AND uni.spry_product_plan = 'SPRY_CONNECT'
   		AND uni.division <> 'JUCO_CC'
   	
-  	GROUP BY 1,2,3,4,  5
+  	GROUP BY 1,2,3,4, 5,6
   
-  ORDER BY 1 ASC,4 ASC	")          
-
+  ORDER BY 1 ASC,4 ASC")          
+recruit_tbl$created_date <- as.Date(recruit_tbl$created_date)
 
 recruit_form <- dbGetQuery(con, "select date_trunc('day',rf.created_at) as created_date
 	, rf.id as id
@@ -141,6 +152,7 @@ join university u
 join sport_team st 
 	on rfb.sport_team_id = st.id ")          
 recruit_form[which(recruit_form$creator_role == "COACH"),]$creator_role <- 'Coach'
+recruit_form$created_date <- as.Date(recruit_form$created_date)
 
 cara_on <- dbGetQuery(con, "select school
   , division
@@ -196,6 +208,39 @@ colnames(recruit_detail) <- c("Created Date","Recruit Name", "Commitment Status"
 colnames(cara_on) <- c("School Name", "Division", "Is Cara On", "Number of Teams",
                        "Total Logs")
 
+events <- dbGetQuery(con, "SELECT date_trunc('day',e.created_at) as created_date
+	, u.name as school
+	, st.name as sport_team
+	, category 
+	, count(ce.id) as total_events
+FROM public.calendar_event ce
+join event e 
+on ce.spry_event_id = e.id
+join university u 
+	on e.university_id = u.id
+	and u.is_active IS TRUE
+            AND u.is_test_data IS FALSE   
+            AND u.id NOT IN (66977385, 66811820, 67620535, 66983148, 67431718,67364443)
+join sport_team st 
+	on e.sport_team_id = st.id
+group by 1,2,3,4")
+
+recruit_material <- dbGetQuery(con, "SELECT date_trunc('day',rm.created_at) as created_date
+	, u.name as school
+	, st.name as sport_team
+	, count(rm.id) as total_material
+FROM public.recruiting_material rm
+join university u 
+	on rm.university_id = u.id
+	and u.is_active IS TRUE
+            AND u.is_test_data IS FALSE   
+            AND u.id NOT IN (66977385, 66811820, 67620535, 66983148, 67431718,67364443)
+join sport_team st 
+	on rm.sport_team_id = st.id
+group by 1,2,3")
+
+
+
 # Build KPI Summary
 ui <- dashboardPage(
   dashboardHeader(title = "Growth Summary"),
@@ -238,20 +283,24 @@ ui <- dashboardPage(
                   label = "Select Recruit High School Graduation Year", 
                   choices = unique(recruit_detail$`High School Graduation Year`)),
               ),
+              h2("PSA"),
               dataTableOutput("recruiting_sum"),
+              h2("Recruits"),
               dataTableOutput("recruits_total"),
+              h2("Recruiting Forms"),
               dataTableOutput("paperwork_sum"),
-              dataTableOutput("recruit_form_sum"),
+              # h2("Paperwork"),
+              # dataTableOutput("recruit_form_sum"),
+              h2("Raw Table Searches"),
+              dataTableOutput("paperwork_raw"),
+              dataTableOutput("recruiting_detail"),
+              dataTableOutput("recruiting_tbl"),
+              dataTableOutput("cara_on"),
               mainPanel(
                 plotOutput("paperwork_role"),
                 plotOutput("recruiting_total"),
                 plotOutput("questionnaire_total"),
               ),
-              
-              dataTableOutput("recruiting_detail"),
-              dataTableOutput("recruiting_tbl"),
-              dataTableOutput("cara_on"),
-              
               
       )
       
@@ -334,7 +383,8 @@ server <- function(input, output) {
   
   output$recruiting_sum <- renderDataTable({
     recruit_tbl %>%
-      dplyr::filter(college == input$school) %>%
+      dplyr::filter(college == input$school &
+                      (as.Date(created_date) >= input$date_range[1] & as.Date(created_date) <= input$date_range[2])) %>%
       group_by(team, college) %>%
       dplyr::summarise(Submitted_Responses = sum(submitted_responses), 
                        Pending_Questionnaires = sum(pending_questionnaires),
@@ -344,26 +394,33 @@ server <- function(input, output) {
   
   output$paperwork_sum <- renderDataTable({
     recruit_form %>%
-      dplyr::filter(school == input$school & team == input$sport) %>%
+      dplyr::filter(school == input$school & team == input$sport &
+                    (as.Date(created_date) >= input$date_range[1] & as.Date(created_date) <= input$date_range[2])) %>%
       group_by(status) %>%
       dplyr::summarise(`Total Forms` = n_distinct(id))
   })
   
-  output$recruit_form_sum <- renderDataTable({
-    paperwork %>%
-      dplyr::filter(created_by_user_role == input$role) %>%
-      dplyr::summarise(total_completed = sum(completed),
-                       total_approved = sum(approved),
-                       total_viewed = sum(viewed), 
-                       total_created = sum(created), 
-                       total_not_started = sum(not_started),
-                       total_in_progress = sum(in_progress),
-                       total_rejected = sum(rejected))
-  })
+  # output$recruit_form_sum <- renderDataTable({
+  #   paperwork %>%
+  #     dplyr::filter(role == input$role & 
+  #                     (as.Date(created_date) >= input$date_range[1] & as.Date(created_date) <= input$date_range[2]) &
+  #                     school == input$school &
+  #                     sport_team == input$sport) %>%
+  #     dplyr::summarise(`Total Completed` = sum(completed),
+  #                      `Total Approved` = sum(approved),
+  #                      `Total Viewed` = sum(viewed), 
+  #                      `Total Created` = sum(created), 
+  #                      `Total Not Started` = sum(not_started),
+  #                      `Total In Progress` = sum(in_progress),
+  #                      `Total Rejected` = sum(rejected))
+  # })
+  
+  output$paperwork_raw <- renderDataTable({paperwork})
   
   output$recruits_total <- renderDataTable({
     recruit %>%
-      dplyr::filter(school_name == input$school) %>%
+      dplyr::filter(school_name == input$school & 
+                      (as.Date(created_date) >= input$date_range[1] & as.Date(created_date) <= input$date_range[2])) %>%
       group_by(sports_team) %>%
       dplyr::summarise(`Total Recruits` = sum(total_recruits),
                        `Total PSA Through Questionnaire` = sum(psa_added_thru_questionnaire))
@@ -375,3 +432,4 @@ server <- function(input, output) {
 }
 
 shinyApp(ui, server)
+
