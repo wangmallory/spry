@@ -196,9 +196,9 @@ cara_on <- dbGetQuery(con, "select school
   ORDER BY 1, 3 ASC, 6 ASC) as base
   group by 1,2,3")
 
-paperwork[which(paperwork$created_by_user_role=='STUDENT_ATHLETE'),]$created_by_user_role <- "SA"
-paperwork[which(paperwork$created_by_user_role=='STUDENT_ADMIN'),]$created_by_user_role <- "Admin"
-paperwork[which(paperwork$created_by_user_role=='COACH'),]$created_by_user_role <- "Coach"
+paperwork[which(paperwork$role=='STUDENT_ATHLETE'),]$role <- "SA"
+paperwork[which(paperwork$role=='STUDENT_ADMIN'),]$role <- "Admin"
+paperwork[which(paperwork$role=='COACH'),]$role <- "Coach"
 
 colnames(recruit_detail) <- c("Created Date","Recruit Name", "Commitment Status", 
                               "High School Graduation Year", "Sports Team",
