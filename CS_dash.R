@@ -15,7 +15,7 @@ con <- dbConnect(RPostgreSQL::PostgreSQL(),
                  host = "spry.cgrmtgar0fom.us-east-1.rds.amazonaws.com", 
                  port = 5432,
                  user = "spry_postgres",
-                 password = "DATABASE_PASSWORD")
+                 password = "LmmhkMCR0EZhpIHrlJ2N")
 
 # # Get table names
 tables <- dbListTables(con)
