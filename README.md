@@ -1,6 +1,8 @@
 # spry
 
-The Spry dashboard will live here and allow users with access to run the dash on their local.
+The Spry dashboard will live here and allow users with access to run the dash on their local. Before we get started, you must first have R installed. Please follow these instructions:
+1. Go to this site(Windows: https://cran.r-project.org/bin/windows/base/, Mac: https://cran.r-project.org/bin/macosx/) and download R. Make sure to selec the one that is compatible with your computer. The downloads are in the links in blue (I know the site looks super old).
+2. Follow the instructions until you drag the R icon into your Applications folder. 
 
 Alright, CS Dashboard users! To get the dashboard to your local, please follow these steps:
 
