@@ -1,5 +1,5 @@
 ## Libraries
-library(DBI)
+require(DBI)
 library(DT)
 library(RPostgreSQL)
 library(shinydashboard)
